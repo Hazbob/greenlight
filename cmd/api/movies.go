@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/julienschmidt/httprouter"
+	"github.com/hazbob/greenlight/internal/data"
 	"net/http"
-	"strconv"
+	"time"
 )
 
 func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Request) {
@@ -12,14 +12,25 @@ func (app *application) createMovieHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request) {
-	params := httprouter.ParamsFromContext(r.Context())
-	id, err := strconv.ParseInt(params.ByName("id"), 10, 64)
+	id, err := app.readIDParam(r)
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	_, err = fmt.Fprintf(w, "show the details of movie %d\n", id)
+	movie := data.Movie{
+		ID:        id,
+		CreatedAt: time.Time{},
+		Title:     "Pulp Fiction",
+		Year:      0,
+		Runtime:   "90",
+		Genres:    []string{"Comedy", "Action"},
+		Version:   1,
+	}
+
+	err = app.writeJson(w, http.StatusOK, movie, nil)
 	if err != nil {
-		fmt.Fprintf(w, "failure to write response")
+		app.logger.Println(err)
+		http.Error(w, "The server encountered a problem and could not proces your request", http.StatusInternalServerError)
+		return
 	}
 }
