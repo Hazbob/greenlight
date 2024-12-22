@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
+	"database/sql"
 	"flag"
 	"fmt"
+	_ "github.com/lib/pq"
 	"log"
 	"net/http"
 	"os"
@@ -14,6 +17,9 @@ const version string = "1.0.0"
 type config struct {
 	port int
 	env  string
+	db   struct {
+		dsn string
+	}
 }
 
 type application struct {
@@ -26,10 +32,18 @@ func main() {
 
 	flag.IntVar(&cfg.port, "port", 4000, "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
+	flag.StringVar(&cfg.db.dsn, "db-dsn", os.Getenv("GREENLIGHT_DB_DSN"), "PostgreSQL DSN")
 	flag.Parse()
 
 	logger := log.New(os.Stdout, " ", log.Ldate|log.Ltime)
 
+	db, err := openDB(cfg)
+
+	defer db.Close()
+	if err != nil {
+		logger.Fatal(err)
+	}
+	logger.Printf("database connection pool established")
 	app := &application{
 		config: cfg,
 		logger: logger,
@@ -44,6 +58,22 @@ func main() {
 	}
 
 	logger.Printf("starting %s server on %s", cfg.env, srv.Addr)
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 	log.Fatal(err)
+}
+
+func openDB(cfg config) (*sql.DB, error) {
+	db, err := sql.Open("postgres", cfg.db.dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err = db.PingContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
+
 }
