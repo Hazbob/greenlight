@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
+	"github.com/hazbob/greenlight/internal/data"
 	_ "github.com/lib/pq"
 	"log"
 	"net/http"
@@ -28,10 +29,13 @@ type config struct {
 type application struct {
 	config config
 	logger *log.Logger
+	models data.Models
 }
 
 func main() {
 	var cfg config
+	vars := os.Getenv("GREENLIGHT_DB_DSN")
+	fmt.Println(vars)
 
 	flag.IntVar(&cfg.port, "port", 4000, "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
@@ -51,9 +55,11 @@ func main() {
 		logger.Fatal(err)
 	}
 	logger.Printf("database connection pool established")
+
 	app := &application{
 		config: cfg,
 		logger: logger,
+		models: data.NewModels(db),
 	}
 
 	srv := &http.Server{
