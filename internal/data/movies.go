@@ -92,5 +92,25 @@ func (m MovieModel) Update(movie *Movie) error {
 }
 
 func (m MovieModel) Delete(id int64) error {
+	query := `
+	DELETE FROM movies WHERE id = $1;
+`
+	res, err := m.DB.Exec(query, id)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrRecordNotFound
+		default:
+			return err
+		}
+	}
+
+	rowsEffected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsEffected == 0 {
+		return ErrRecordNotFound
+	}
 	return nil
 }
