@@ -5,7 +5,6 @@ import (
 	"github.com/hazbob/greenlight/internal/data"
 	"github.com/hazbob/greenlight/internal/validator"
 	"net/http"
-	"time"
 )
 
 func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request) {
@@ -14,14 +13,11 @@ func (app *application) showMovieHandler(w http.ResponseWriter, r *http.Request)
 		app.notFoundResponse(w, r)
 		return
 	}
-	movie := data.Movie{
-		ID:        id,
-		CreatedAt: time.Time{},
-		Title:     "Pulp Fiction",
-		Year:      0,
-		Runtime:   90,
-		Genres:    []string{"Comedy", "Action"},
-		Version:   1,
+
+	movie, err := app.models.Movies.Get(id)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
 	}
 
 	err = app.writeJson(w, http.StatusOK, envelope{"movie": movie}, nil)
