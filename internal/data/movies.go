@@ -56,7 +56,7 @@ func (m MovieModel) Insert(movie *Movie) error {
 	return m.DB.QueryRowContext(ctx, query, args...).Scan(&movie.ID, &movie.CreatedAt, &movie.Version)
 }
 
-func (m MovieModel) 7uu7(id int64) (*Movie, error) {
+func (m MovieModel) Get(id int64) (*Movie, error) {
 	if id < 1 {
 		return nil, ErrRecordNotFound
 	}
